@@ -3,11 +3,6 @@
     windows_subsystem = "windows"
 )]
 
-mod decoder;
-
-use std::fs::File;
-
-use decoder::decoder;
 use tauri::{
     Menu,
     CustomMenuItem,
@@ -38,27 +33,27 @@ fn main() {
 
                     //ウィンドウにファイルパスを通知
                     let window = event.window();
-                    window.emit("open_file", {
-                        &file_path
-                    }).unwrap();
+                    window.emit("open_file", &file_path).unwrap();
 
                     //デコード
-                    let Ok(file) = File::open(file_path) else {
-                        MessageDialogBuilder::new("エラー", "ファイルを開けません。").kind(MessageDialogKind::Error).show();
-                        return;
-                    };
-                    
-                    let decoded = match decoder(file) {
-                        Ok(decoded) => decoded,
+                    let mut reader = match hound::WavReader::open(file_path) {
+                        Ok(reader) => reader,
                         Err(err) => {
-                            MessageDialogBuilder::new("デコーダーエラー", err).kind(MessageDialogKind::Error).show();
+                            MessageDialogBuilder::new("デコーダーエラー", format!("ファイルを読み込めませんでした。\n{}", err)).kind(MessageDialogKind::Error).show();
                             return;
                         },
                     };
-                    let Some(decoded) = decoded else { return; };
-                    let samples = decoded.samples();
-
-                    dbg!(samples);
+                    let samples: Vec<i32> = match reader.samples::<i32>().collect::<Result<Vec<i32>, _>>() {
+                        Ok(samples) => samples,
+                        Err(err) => {
+                            MessageDialogBuilder::new("デコーダーエラー", format!("デコードに失敗しました。\n{}", err)).kind(MessageDialogKind::Error).show();
+                            return;
+                        },
+                    };
+                    
+                    //ウィンドウにデコード結果を通知
+                    let window = event.window();
+                    window.emit("decoded", &samples).unwrap();
                 }
                 _ => {}
             }
