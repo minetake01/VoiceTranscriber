@@ -3,16 +3,15 @@
     windows_subsystem = "windows"
 )]
 
+mod decoder;
+
+use decoder::decoder;
 use tauri::{
     Menu,
     CustomMenuItem,
     Submenu,
     api::dialog::{
-        blocking::{
-            FileDialogBuilder,
-            MessageDialogBuilder
-        },
-        MessageDialogKind
+        blocking::{FileDialogBuilder, MessageDialogBuilder}, MessageDialogKind,
     },
 };
 
@@ -36,24 +35,15 @@ fn main() {
                     window.emit("open_file", &file_path).unwrap();
 
                     //デコード
-                    let mut reader = match hound::WavReader::open(file_path) {
-                        Ok(reader) => reader,
-                        Err(err) => {
-                            MessageDialogBuilder::new("デコーダーエラー", format!("ファイルを読み込めませんでした。\n{}", err)).kind(MessageDialogKind::Error).show();
-                            return;
-                        },
-                    };
-                    let samples: Vec<i32> = match reader.samples::<i32>().collect::<Result<Vec<i32>, _>>() {
-                        Ok(samples) => samples,
-                        Err(err) => {
-                            MessageDialogBuilder::new("デコーダーエラー", format!("デコードに失敗しました。\n{}", err)).kind(MessageDialogKind::Error).show();
-                            return;
-                        },
-                    };
-                    
-                    //ウィンドウにデコード結果を通知
-                    let window = event.window();
-                    window.emit("decoded", &samples).unwrap();
+                    tauri::async_runtime::spawn(async move {
+                        let decoded = match decoder(file_path).await {
+                            Ok(decoded) => decoded,
+                            Err(err) => {
+                                MessageDialogBuilder::new("デコーダーエラー", err).kind(MessageDialogKind::Error).show();
+                                return;
+                            }
+                        };
+                    });
                 }
                 _ => {}
             }
