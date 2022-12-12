@@ -6,4 +6,5 @@
 git clone https://github.com/minetake01/train-data-creator
 cd train-data-creator
 pnpm install
+pnpm tauri dev
 ```
