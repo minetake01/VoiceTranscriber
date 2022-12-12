@@ -47,7 +47,15 @@ fn main() {
                         MessageDialogBuilder::new("エラー", "ファイルを開けません。").kind(MessageDialogKind::Error).show();
                         return;
                     };
-                    let Some(decoded) = decoder(file) else { return; };
+                    
+                    let decoded = match decoder(file) {
+                        Ok(decoded) => decoded,
+                        Err(err) => {
+                            MessageDialogBuilder::new("デコーダーエラー", err).kind(MessageDialogKind::Error).show();
+                            return;
+                        },
+                    };
+                    let Some(decoded) = decoded else { return; };
                     let samples = decoded.samples();
 
                     dbg!(samples);
