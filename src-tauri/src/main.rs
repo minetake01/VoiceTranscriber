@@ -5,9 +5,10 @@
 
 mod audio;
 
-use std::{sync::Mutex, thread};
+use std::thread;
 
 use audio::AudioEditor;
+use once_cell::sync::OnceCell;
 use tauri::{
     Menu,
     CustomMenuItem,
@@ -17,13 +18,13 @@ use tauri::{
     },
 };
 
+static AUDIO_EDITOR: OnceCell<AudioEditor> = OnceCell::new();
+
 fn main() {
     let open_file = CustomMenuItem::new("open_file".to_owned(), "Open File...");
     let submenu = Submenu::new("File", Menu::new().add_item(open_file));
     let menu = Menu::new()
         .add_submenu(submenu);
-
-    let audio_editor = Mutex::new(AudioEditor::default());
 
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![])
@@ -39,13 +40,15 @@ fn main() {
                     window.emit("open_file", &file_path).unwrap();
 
                     //デコード
-                    thread::scope(|s| {
-                        s.spawn(|| {
-                            if let Err(err) = audio_editor.lock().unwrap().decode(file_path) {
+                    thread::spawn(|| {
+                        let decoded = match AudioEditor::decode(file_path) {
+                            Ok(audio_editor) => audio_editor,
+                            Err(err) => {
                                 MessageDialogBuilder::new("デコーダーエラー", err).kind(MessageDialogKind::Error).show();
                                 return;
-                            };
-                        });
+                            }
+                        };
+                        AUDIO_EDITOR.set(decoded).unwrap();
                     });
                 }
                 _ => {}

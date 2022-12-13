@@ -2847,6 +2847,7 @@ dependencies = [
  "dasp",
  "hound",
  "itertools",
+ "once_cell",
  "serde",
  "serde_json",
  "tauri",

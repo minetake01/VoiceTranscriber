@@ -9,7 +9,7 @@ pub struct AudioEditor {
     samples: Vec<i32>,
 }
 impl AudioEditor {
-    pub fn decode(&mut self, path: PathBuf) -> Result<(), String> {
+    pub fn decode(path: PathBuf) -> Result<Self, String> {
         let reader = match hound::WavReader::open(path) {
             Ok(reader) => reader,
             Err(err) => {
@@ -29,13 +29,15 @@ impl AudioEditor {
         };
 
         //1チャンネルに変換(それぞれのチャンネルを比較して一番小さい値を採用)
-        self.samples = samples.chunks(raw_channels as usize)
+        let samples = samples.chunks(raw_channels as usize)
             .map(|chunk| chunk.iter().min().unwrap().to_owned())
             .collect::<Vec<i32>>();
         spec.channels = 1;
-        self.spec = Some(spec);
 
-        Ok(())
+        Ok(Self {
+            spec: Some(spec),
+            samples
+        })
     }
 
     //デバッグ用エンコーダー
