@@ -33,7 +33,7 @@ fn main() {
             match event.menu_item_id() {
                 "open_file" => {
                     //ファイル選択ダイアログ表示
-                    let Some(file_path) = FileDialogBuilder::new().pick_file() else { return; };
+                    let Some(file_path) = FileDialogBuilder::new().add_filter("WAV Audio File (VLC)", &["wav"]).pick_file() else { return; };
 
                     //ウィンドウにファイルパスを通知
                     let window = event.window();
