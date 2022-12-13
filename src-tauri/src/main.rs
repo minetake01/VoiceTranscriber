@@ -3,9 +3,11 @@
     windows_subsystem = "windows"
 )]
 
-mod decoder;
+mod audio;
 
-use decoder::decoder;
+use std::{sync::Mutex, thread};
+
+use audio::AudioEditor;
 use tauri::{
     Menu,
     CustomMenuItem,
@@ -21,10 +23,12 @@ fn main() {
     let menu = Menu::new()
         .add_submenu(submenu);
 
+    let audio_editor = Mutex::new(AudioEditor::default());
+
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![])
         .menu(menu)
-        .on_menu_event(|event| {
+        .on_menu_event(move |event| {
             match event.menu_item_id() {
                 "open_file" => {
                     //ファイル選択ダイアログ表示
@@ -35,14 +39,13 @@ fn main() {
                     window.emit("open_file", &file_path).unwrap();
 
                     //デコード
-                    tauri::async_runtime::spawn(async move {
-                        let decoded = match decoder(file_path).await {
-                            Ok(decoded) => decoded,
-                            Err(err) => {
+                    thread::scope(|s| {
+                        s.spawn(|| {
+                            if let Err(err) = audio_editor.lock().unwrap().decode(file_path) {
                                 MessageDialogBuilder::new("デコーダーエラー", err).kind(MessageDialogKind::Error).show();
                                 return;
-                            }
-                        };
+                            };
+                        });
                     });
                 }
                 _ => {}
