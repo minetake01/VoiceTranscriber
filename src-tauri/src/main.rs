@@ -8,7 +8,7 @@ mod audio;
 use std::thread;
 
 use audio::AudioEditor;
-use once_cell::sync::OnceCell;
+use once_cell::sync::Lazy;
 use tauri::{
     Menu,
     CustomMenuItem,
@@ -18,7 +18,7 @@ use tauri::{
     },
 };
 
-static AUDIO_EDITOR: OnceCell<AudioEditor> = OnceCell::new();
+static AUDIO_EDITOR: Lazy<Mutex<AudioEditor>> = Lazy::new(|| Mutex::new(AudioEditor::default()));
 
 fn main() {
     let open_file = CustomMenuItem::new("open_file".to_owned(), "Open File...");
@@ -48,7 +48,7 @@ fn main() {
                                 return;
                             }
                         };
-                        AUDIO_EDITOR.set(decoded).unwrap();
+                        *AUDIO_EDITOR.lock().unwrap() = decoded.clone();
                     });
                 }
                 _ => {}
