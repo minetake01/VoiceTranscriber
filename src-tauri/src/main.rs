@@ -5,7 +5,7 @@
 
 mod audio;
 
-use std::thread;
+use std::sync::Mutex;
 
 use audio::AudioEditor;
 use once_cell::sync::Lazy;
@@ -29,27 +29,20 @@ fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![])
         .menu(menu)
-        .on_menu_event(move |event| {
+        .on_menu_event(|event| {
             match event.menu_item_id() {
                 "open_file" => {
                     //ファイル選択ダイアログ表示
-                    let Some(file_path) = FileDialogBuilder::new().add_filter("WAV Audio File (VLC)", &["wav"]).pick_file() else { return; };
+                    let Some(path) = FileDialogBuilder::new().add_filter("WAV Audio File (VLC)", &["wav"]).pick_file() else { return; };
 
-                    //ウィンドウにファイルパスを通知
-                    let window = event.window();
-                    window.emit("open_file", &file_path).unwrap();
+                    let mut audio_editor = AUDIO_EDITOR.lock().unwrap();
 
-                    //デコード
-                    thread::spawn(|| {
-                        let decoded = match AudioEditor::decode(file_path) {
-                            Ok(audio_editor) => audio_editor,
-                            Err(err) => {
-                                MessageDialogBuilder::new("デコーダーエラー", err).kind(MessageDialogKind::Error).show();
+                    if let Err(err) = audio_editor.decode(path) {
+                        MessageDialogBuilder::new("デコーダーエラー", format!("{}", err)).kind(MessageDialogKind::Error).show();
                                 return;
                             }
-                        };
-                        *AUDIO_EDITOR.lock().unwrap() = decoded.clone();
-                    });
+                    
+                    event.window().emit("decoded", audio_editor.spec.unwrap().sample_rate).unwrap();
                 }
                 _ => {}
             }
