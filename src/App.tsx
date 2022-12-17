@@ -1,20 +1,29 @@
 import { invoke } from "@tauri-apps/api";
-import { createSignal } from "solid-js";
+import { listen } from "@tauri-apps/api/event";
+import { createSignal, Show } from "solid-js";
 import "./App.css";
-import FileList from "./components/FileList";
+import LoudnessViewer from "./components/LoudnessViewer";
 
 export default function App() {
-  const [dirPath, setDirPath] = createSignal<string>("");
-  const [fileList, setFileList] = createSignal<string[]>([]);
+    const [sampleRate, setSampleRate] = createSignal<number>();
+    const [samples, setSamples] = createSignal<number[]>([]);
 
-  (async () => {
-    const directoryPath = await invoke<string>("open-pick-folder-dialog");
-    setFileList(await invoke("get-file-list", {directoryPath}));
-  })
+    listen<number>("decoded", event => {
+        setSampleRate(event.payload);
 
-  return <>
-    <div class="file-list">
-      <FileList list={fileList()} />
-    </div>
-  </>
+        (async () => {
+            const samples = await invoke<number[]>("samples_extraction", {
+                start: 0,
+                end: -1,
+                n: 3840,
+            });
+            setSamples(samples);
+        })();
+    });
+
+    return <>
+        <Show when={sampleRate()} fallback={<div>ファイルを選択してください。</div>}>
+            <LoudnessViewer samples={samples()} />
+        </Show>
+    </>
 }

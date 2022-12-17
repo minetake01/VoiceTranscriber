@@ -39,4 +39,14 @@ impl AudioEditor {
         });
         writer.finalize().unwrap();
     }
+
+    pub fn samples_extraction(&self, start: usize, end: usize, n: f32) -> Vec<i32> {
+        let chunk_size = (self.samples.len() as f32 / n).ceil() as i32;
+        let extracted: Vec<i32> = self.samples[start..end].chunks(chunk_size as usize).map(|chunk| {
+            chunk.iter().map(|sample| sample.abs()).sum::<i32>() / chunk_size
+        })
+        .collect();
+
+        extracted
+    }
 }

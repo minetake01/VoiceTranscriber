@@ -3,6 +3,7 @@
     windows_subsystem = "windows"
 )]
 
+mod commands;
 mod audio;
 
 use std::sync::Mutex;
@@ -18,16 +19,26 @@ use tauri::{
     },
 };
 
+use crate::commands::samples_extraction;
+
 static AUDIO_EDITOR: Lazy<Mutex<AudioEditor>> = Lazy::new(|| Mutex::new(AudioEditor::default()));
 
 fn main() {
     let open_file = CustomMenuItem::new("open_file".to_owned(), "Open File...");
-    let submenu = Submenu::new("File", Menu::new().add_item(open_file));
+    let open_project = CustomMenuItem::new("open_project".to_owned(), "Open Project...");
+    let file = Submenu::new(
+        "File",
+        Menu::new()
+            .add_item(open_file)
+            .add_item(open_project)
+    );
     let menu = Menu::new()
-        .add_submenu(submenu);
+        .add_submenu(file);
 
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![])
+        .invoke_handler(tauri::generate_handler![
+            samples_extraction
+        ])
         .menu(menu)
         .on_menu_event(|event| {
             match event.menu_item_id() {
@@ -39,8 +50,8 @@ fn main() {
 
                     if let Err(err) = audio_editor.decode(path) {
                         MessageDialogBuilder::new("デコーダーエラー", format!("{}", err)).kind(MessageDialogKind::Error).show();
-                                return;
-                            }
+                        return;
+                    }
                     
                     event.window().emit("decoded", audio_editor.spec.unwrap().sample_rate).unwrap();
                 }
