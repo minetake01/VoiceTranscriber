@@ -1,9 +1,6 @@
 import { defineConfig } from "vite";
-import solidPlugin from "vite-plugin-solid";
 
 export default defineConfig({
-  plugins: [solidPlugin()],
-
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   // prevent vite from obscuring rust errors
   clearScreen: false,
@@ -22,5 +19,13 @@ export default defineConfig({
     minify: !process.env.TAURI_DEBUG ? "esbuild" : false,
     // produce sourcemaps for debug builds
     sourcemap: !!process.env.TAURI_DEBUG,
+
+    lib: {
+      entry: "src/app-root.ts",
+      formats: ["es"],
+    },
+    rollupOptions: {
+      external: /^lit/,
+    },
   },
 });
