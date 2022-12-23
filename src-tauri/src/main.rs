@@ -34,6 +34,11 @@ fn main() {
 
     tauri::Builder::default()
         .manage(EditorState(Default::default()))
+        .setup(|app| {
+            #[cfg(debug_assertions)]
+            app.get_window("main").unwrap().open_devtools();
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             select_file,
             decode,
