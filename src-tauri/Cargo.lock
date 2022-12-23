@@ -2727,7 +2727,6 @@ version = "0.0.0"
 dependencies = [
  "hound",
  "itertools",
- "once_cell",
  "serde",
  "serde_json",
  "tauri",
