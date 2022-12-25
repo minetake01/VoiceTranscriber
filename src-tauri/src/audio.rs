@@ -1,5 +1,6 @@
 use hound::WavSpec;
 use itertools::Itertools;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone, Default)]
 pub struct AudioEditor {
@@ -52,16 +53,20 @@ impl AudioEditor {
         extracted
     }
 
-    pub fn split_range(&self, threshold: i32, talk_dur_sec: f32, mute_dur_sec: f32, extend_sec: f32) -> Vec<Vec<usize>> {
+    pub fn split_range(&self, count: Arc<Mutex<i32>>, threshold: i32, talk_dur_sec: f32, mute_dur_sec: f32, extend_sec: f32) -> Option<Vec<Vec<usize>>> {
         let sample_rate = self.spec.unwrap().sample_rate;
         let talk_dur = (sample_rate as f32 * talk_dur_sec) as usize;
         let mute_dur = (sample_rate as f32 * mute_dur_sec) as usize;
         let extend = (sample_rate as f32 * extend_sec) as usize;
+        let orig = *count.lock().unwrap();
 
         let mut ranges: Vec<Vec<usize>> = vec![];
         let mut range: [usize; 2] = [0, 0];
         let mut last_key = false;
         for (key, mut group) in &self.samples.iter().enumerate().group_by(|(_, sample)| sample.abs() >= threshold) {
+            if *count.lock().unwrap() != orig {
+                return None;
+            }
             let index = group.next().unwrap().0;
             let len = group.count() + 1;
             if key && !last_key {
@@ -81,6 +86,6 @@ impl AudioEditor {
             ranges.push(vec![range[0] - extend, range[1] + extend]);
         }
 
-        ranges
+        Some(ranges)
     }
 }
