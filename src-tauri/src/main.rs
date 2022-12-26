@@ -6,7 +6,7 @@
 mod commands;
 mod audio;
 
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use audio::AudioEditor;
 use tauri::{
@@ -19,6 +19,7 @@ use tauri::{
 use crate::commands::*;
 
 pub struct EditorState(Mutex<AudioEditor>);
+pub struct SplitRangeCount(Arc<Mutex<i32>>);
 
 fn main() {
     let open_file = CustomMenuItem::new("open_file".to_owned(), "Open File...");
@@ -34,6 +35,7 @@ fn main() {
 
     tauri::Builder::default()
         .manage(EditorState(Default::default()))
+        .manage(SplitRangeCount(Arc::new(Mutex::new(0))))
         .setup(|app| {
             #[cfg(debug_assertions)]
             app.get_window("main").unwrap().open_devtools();

@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use tauri::{api::dialog::blocking::FileDialogBuilder, State};
 
-use crate::EditorState;
+use crate::{EditorState, SplitRangeCount};
 
 #[tauri::command]
 pub fn select_file() -> Option<PathBuf> {
@@ -35,11 +35,18 @@ pub async fn samples_extraction(
 #[tauri::command]
 pub async fn split_range(
     state: State<'_, EditorState>,
+    count: State<'_, SplitRangeCount>,
     threshold: i32,
     talk_dur_sec: f32,
     mute_dur_sec: f32,
     extend_sec: f32
 ) -> Result<Vec<Vec<usize>>, ()> {
     let audio_editor = state.0.lock().unwrap().clone();
-    Ok(audio_editor.split_range(threshold, talk_dur_sec, mute_dur_sec, extend_sec))
+    let count = count.0.clone();
+    
+    *count.lock().unwrap() += 1;
+
+    let result = audio_editor.split_range(count.clone(), threshold, talk_dur_sec, mute_dur_sec, extend_sec);
+
+    result.ok_or(())
 }
