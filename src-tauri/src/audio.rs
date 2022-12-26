@@ -77,13 +77,17 @@ impl AudioEditor {
                 last_key = false;
 
                 if range[1] - range[0] >= talk_dur {
-                    ranges.push(vec![range[0].saturating_sub(extend), range[1].saturating_add(extend)]);
+                    let start = range[0].saturating_sub(extend);
+                    let end = range[1].saturating_add(extend);
+                    ranges.push(vec![start, end]);
                     range = [0, 0];
                 }
             }
         }
         if range[1].saturating_sub(range[0]) >= talk_dur {
-            ranges.push(vec![range[0] - extend, range[1] + extend]);
+            let start = range[0].saturating_sub(extend);
+            let end = range[1].saturating_add(extend);
+            ranges.push(vec![start, end]);
         }
 
         Some(ranges)
