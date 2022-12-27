@@ -3,7 +3,7 @@
     "beforeDevCommand": "pnpm dev",
     "beforeBuildCommand": "pnpm build",
     "devPath": "http://localhost:1420",
-    "distDir": "../dist",
+    "distDir": "../out",
     "withGlobalTauri": false
   },
   "package": {
@@ -13,8 +13,8 @@
   "tauri": {
     "allowlist": {
       "dialog": {
-        "all": true,
-        "open": true
+        "open": true,
+        "save": true
       }
     },
     "bundle": {
@@ -58,6 +58,7 @@
     },
     "windows": [
       {
+        "fileDropEnabled": false,
         "fullscreen": false,
         "height": 600,
         "resizable": true,
