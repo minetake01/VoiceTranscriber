@@ -27,13 +27,10 @@ impl AudioEditor {
         //クリア
         self.samples = vec![];
 
-        let spec = reader.spec();
-        self.spec = Some(spec);
-
         //デコード
+        let mut spec = reader.spec();
         let samples = {
             let dur = reader.duration();
-            let spec = reader.spec();
             let path = Arc::new(file_path.clone());
 
             let handles = (0..THREAD).map(|i| {
@@ -63,7 +60,9 @@ impl AudioEditor {
             result
         };
         self.samples = samples;
-
+        spec.channels = 1;
+        self.spec = Some(spec);
+        
         Ok(())
     }
 
