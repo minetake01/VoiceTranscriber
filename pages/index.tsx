@@ -1,4 +1,5 @@
 import Head from 'next/head';
+import PageSwitch from './PageSwitch';
 
 export default function Home() {
     return <>
@@ -9,6 +10,7 @@ export default function Home() {
             <link rel="icon" href="/favicon.ico" />
         </Head>
         <main>
+            <PageSwitch />
         </main>
     </>;
 }
