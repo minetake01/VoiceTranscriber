@@ -17,7 +17,7 @@ export default function FileSelectPage() {
         }).catch(() => { return; });
     };
     
-    return <div css={styles.pageRoot}>
+    return <>
         <Grid container justifyContent="center" alignItems="center" height="100%">
             <Stack spacing={1} direction="row">
                 <Button disabled={processing} variant="contained" onClick={openFile}>
@@ -28,11 +28,5 @@ export default function FileSelectPage() {
                 </Button>
             </Stack>
         </Grid>
-    </div>;
-}
-
-const styles = {
-    pageRoot: css({
-        height: "100vh",
-    }),
+    </>;
 }
