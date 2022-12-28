@@ -1,6 +1,10 @@
-use hound::WavSpec;
+use hound::{WavReader, WavSpec};
 use itertools::Itertools;
-use std::{sync::{Arc, Mutex}, path::PathBuf};
+use std::sync::{Arc, Mutex};
+use std::path::PathBuf;
+use std::thread::{self, JoinHandle};
+
+const THREAD: u32 = 4;
 
 #[derive(Debug, Clone, Default)]
 pub struct AudioEditor {
@@ -13,7 +17,7 @@ impl AudioEditor {
         let Some(ref file_path) = self.file_path else {
             return Err(format!("ファイルパスが設定されていません。"));
         };
-        let reader = match hound::WavReader::open(file_path) {
+        let reader = match WavReader::open(file_path) {
             Ok(reader) => reader,
             Err(err) => {
                 return Err(format!("ファイルを読み込めませんでした。\n{}", err));
@@ -27,11 +31,36 @@ impl AudioEditor {
         self.spec = Some(spec);
 
         //デコード
-        let samples = match reader.into_samples().step_by(spec.channels as usize).collect::<Result<Vec<i32>, _>>() {
-            Ok(samples) => samples,
-            Err(err) => {
-                return Err(format!("デコードに失敗しました。\n{}", err));
-            },
+        let samples = {
+            let dur = reader.duration();
+            let spec = reader.spec();
+            let path = Arc::new(file_path.clone());
+
+            let handles = (0..THREAD).map(|i| {
+                let path = path.clone();
+                let handle: JoinHandle<Result<Vec<i32>, String>> = thread::spawn(move || {
+                    let mut reader = WavReader::open(&*path)
+                        .map_err(|err| format!("ファイルを読み込めませんでした。\n{}", err))?;
+                    let seek_to = dur / THREAD * i;
+                    reader.seek(seek_to).unwrap();
+                    let take_len = (dur / THREAD + if i == THREAD - 1 {dur % THREAD} else {0}) * spec.channels as u32;
+                    let samples = reader.into_samples()
+                        .take(take_len as usize)
+                        .skip((seek_to % spec.channels as u32) as usize)
+                        .step_by(spec.channels as usize)
+                        .collect::<Result<Vec<i32>, _>>()
+                        .map_err(|err| format!("デコードに失敗しました。\n{}", err))?;
+                    Ok(samples)
+                });
+                handle
+            }).collect::<Vec<_>>();
+            
+            let mut result = Vec::new();
+            for handle in handles {
+                let v = handle.join().unwrap()?;
+                result.extend(v);
+            }
+            result
         };
         self.samples = samples;
 
