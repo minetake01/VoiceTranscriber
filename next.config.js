@@ -7,6 +7,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  compiler: {
+    emotion: true,
+  },
 }
 
 module.exports = nextConfig
