@@ -10,7 +10,10 @@ pub struct AudioEditor {
 }
 impl AudioEditor {
     pub fn decode(&mut self) -> Result<(), String> {
-        let reader = match hound::WavReader::open(self.file_path.as_ref().unwrap()) {
+        let Some(ref file_path) = self.file_path else {
+            return Err(format!("ファイルパスが設定されていません。"));
+        };
+        let reader = match hound::WavReader::open(file_path) {
             Ok(reader) => reader,
             Err(err) => {
                 return Err(format!("ファイルを読み込めませんでした。\n{}", err));
