@@ -1,18 +1,18 @@
-use std::path::PathBuf;
-
 use tauri::{api::dialog::blocking::FileDialogBuilder, State};
 
 use crate::{EditorState, SplitRangeCount};
 
 #[tauri::command]
-pub fn select_file() -> Option<PathBuf> {
-    FileDialogBuilder::new().add_filter("WAV Audio File (VLC)", &["wav"]).pick_file()
+pub async fn select_file(state: State<'_, EditorState>) -> Result<(), ()> {
+    let mut audio_editor = state.0.lock().unwrap();
+    audio_editor.file_path = FileDialogBuilder::new().add_filter("WAV Audio File (VLC)", &["wav"]).pick_file();
+    Ok(())
 }
 
 #[tauri::command]
-pub async fn decode(state: State<'_, EditorState>, path: String) -> Result<(), String> {
+pub async fn decode(state: State<'_, EditorState>) -> Result<(), String> {
     let mut audio_editor = state.0.lock().unwrap();
-    audio_editor.decode(path)
+    audio_editor.decode()
 }
 
 #[tauri::command]

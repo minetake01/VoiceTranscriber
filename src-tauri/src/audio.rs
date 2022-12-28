@@ -1,15 +1,16 @@
 use hound::WavSpec;
 use itertools::Itertools;
-use std::sync::{Arc, Mutex};
+use std::{sync::{Arc, Mutex}, path::PathBuf};
 
 #[derive(Debug, Clone, Default)]
 pub struct AudioEditor {
+    pub file_path: Option<PathBuf>,
     pub spec: Option<WavSpec>,
     pub samples: Vec<i32>,
 }
 impl AudioEditor {
-    pub fn decode(&mut self, path: String) -> Result<(), String> {
-        let reader = match hound::WavReader::open(path) {
+    pub fn decode(&mut self) -> Result<(), String> {
+        let reader = match hound::WavReader::open(self.file_path.as_ref().unwrap()) {
             Ok(reader) => reader,
             Err(err) => {
                 return Err(format!("ファイルを読み込めませんでした。\n{}", err));

@@ -51,7 +51,7 @@ fn main() {
         .on_menu_event(|event| {
             match event.menu_item_id() {
                 "open_file" => {
-                    event.window().emit("file_selected", select_file()).unwrap();
+                    event.window().emit("file_select", ()).unwrap();
                 }
                 _ => {}
             }
