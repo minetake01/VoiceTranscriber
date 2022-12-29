@@ -1,18 +1,16 @@
 import { invoke } from "@tauri-apps/api/tauri";
-import { css } from "@emotion/react";
 import { Button, Grid, Stack } from "@mui/material";
-import { useContext, useState } from "react";
-import { Pages, SetPagesContext } from "../_app";
+import { useState } from "react";
+import { Pages } from "../PageSwitch";
 
-export default function FileSelectPage() {
+export default function FileSelectPage(props: {setPage: (pages: Pages) => void}) {
     const [processing, setProcessing] = useState(false);
-    const setPages = useContext(SetPagesContext);
 
     const openFile = () => {
         invoke("select_file").then(async () => {
             setProcessing(true);
             await invoke("decode");
-            setPages(Pages.AudioSplit);
+            props.setPage(Pages.AudioSplit);
             setProcessing(false);
         }).catch(() => { return; });
     };
