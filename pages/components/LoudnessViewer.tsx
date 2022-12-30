@@ -1,5 +1,5 @@
 import { css } from "@emotion/react";
-import { memo, useEffect } from "react";
+import { memo, useEffect, useRef } from "react";
 
 function LoudnessViewer(
     props: {
@@ -13,10 +13,12 @@ function LoudnessViewer(
 
     const magnification = canvasHeight / Math.max(...props.samples);
 
+    const loudnessCanvas = useRef<HTMLCanvasElement>(null);
+    const thresholdCanvas = useRef<HTMLCanvasElement>(null);
+
     //ラウドネスグラフの描画
     useEffect(() => {
-        const canvas = document.getElementById("loudness") as HTMLCanvasElement;
-        const ctx = canvas.getContext("2d", { alpha: false })!;
+        const ctx = loudnessCanvas.current?.getContext("2d", { alpha: false })!;
 
         //白埋め
         ctx.fillStyle = "white";
@@ -36,8 +38,7 @@ function LoudnessViewer(
     //しきい値の線を描画
     useEffect(() => {
         if (props.threshold) {
-            const canvas = document.getElementById("threshold") as HTMLCanvasElement;
-            const ctx = canvas.getContext("2d")!;
+            const ctx = thresholdCanvas.current?.getContext("2d")!;
 
             const lineY = Math.floor(canvasHeight - props.threshold * magnification);
     
@@ -65,8 +66,8 @@ function LoudnessViewer(
     };
 
     return <div css={styles.canvasContainer}>
-        <canvas css={styles.canvasLayer} height={canvasHeight} width={canvasWeight} id="loudness" />
-        <canvas css={styles.canvasLayer} height={canvasHeight} width={canvasWeight} id="threshold" />
+        <canvas css={styles.canvasLayer} height={canvasHeight} width={canvasWeight} ref={loudnessCanvas} />
+        <canvas css={styles.canvasLayer} height={canvasHeight} width={canvasWeight} ref={thresholdCanvas} />
     </div>;
 }
 
