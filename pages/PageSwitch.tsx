@@ -1,8 +1,8 @@
 import { useState } from "react";
-import AudioSplitPage from "./app/AudioSplit";
-import ExportPage from "./app/Export";
-import FileSelectPage from "./app/FileSelect";
-import LabelingPage from "./app/Labeling";
+import AudioSplitPage from "../contents/AudioSplit";
+import ExportPage from "../contents/Export";
+import FileSelectPage from "../contents/FileSelect";
+import LabelingPage from "../contents/Labeling";
 
 export enum Pages {
     FileSelect,

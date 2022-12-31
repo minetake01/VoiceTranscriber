@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/tauri";
 import { Button, Grid, Stack } from "@mui/material";
 import { useState } from "react";
-import { Pages } from "../PageSwitch";
+import { Pages } from "../pages/PageSwitch";
 
 export default function FileSelectPage(props: {setPage: (pages: Pages) => void}) {
     const [processing, setProcessing] = useState(false);
