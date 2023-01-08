@@ -26,8 +26,12 @@
     "@mui/icons-material": "^5.11.0",
     "@mui/material": "^5.11.2",
     "@tauri-apps/api": "1.2.0",
+    "konva": "^8.3.14",
     "next": "13.1.1",
     "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "react-dom": "18.2.0",
+    "react-konva": "^18.2.3",
+    "recoil": "^0.7.6",
+    "usehooks-ts": "^2.9.1"
   }
 }

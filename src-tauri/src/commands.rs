@@ -2,57 +2,58 @@ use std::path::PathBuf;
 
 use tauri::{api::dialog::blocking::FileDialogBuilder, State};
 
-use crate::{EditorState, SplitRangeCount};
+use crate::{EditorState, ProcessCount};
 
 #[tauri::command]
-pub async fn select_file(state: State<'_, EditorState>) -> Result<PathBuf, ()> {
-    let Some(file_path) = FileDialogBuilder::new().add_filter("WAV Audio File (VLC)", &["wav"]).pick_file() else {
-        return Err(());
-    };
-    let mut audio_editor = state.0.lock().unwrap();
-    audio_editor.file_path = Some(file_path.clone());
+pub async fn open_file(editor_state: State<'_, EditorState>) -> Result<(), String> {
+    let mut audio_editor = editor_state.0.lock().unwrap();
+    audio_editor.file_path = FileDialogBuilder::new().add_filter("WAV Audio File (VLC)", &["wav"]).pick_file().ok_or("")?;
+    audio_editor.decode()?;
 
-    Ok(file_path)
+    Ok(())
 }
 
 #[tauri::command]
-pub async fn decode(state: State<'_, EditorState>) -> Result<(), String> {
-    let mut audio_editor = state.0.lock().unwrap();
-    audio_editor.decode()
+pub fn get_file_path(
+    editor_state: State<'_, EditorState>,
+) -> PathBuf {
+    let audio_editor = editor_state.0.lock().unwrap().clone();
+    audio_editor.file_path
 }
 
 #[tauri::command]
-pub async fn samples_extraction(
-    state: State<'_, EditorState>,
+pub async fn extract_amplitude_samples(
+    editor_state: State<'_, EditorState>,
     start: usize,
     end: i32,
-    n: f32
+    n: u32,
 ) -> Result<Vec<i32>, ()> {
-    let audio_editor = state.0.lock().unwrap().clone();
-    let arg_end: usize;
-    if end == -1 {
-        arg_end = audio_editor.samples.len();
-    } else {
-        arg_end = end as usize;
-    }
-    Ok(audio_editor.samples_extraction(start, arg_end, n))
+    let audio_editor = editor_state.0.lock().unwrap().clone();
+    let result = audio_editor.extract_amplitude_samples(start, end, n);
+    
+    Ok(result)
 }
 
 #[tauri::command]
-pub async fn split_range(
-    state: State<'_, EditorState>,
-    count: State<'_, SplitRangeCount>,
+pub async fn split_audio(
+    editor_state: State<'_, EditorState>,
+    process_count: State<'_, ProcessCount>,
     threshold: i32,
     talk_dur_sec: f32,
-    mute_dur_sec: f32,
+    silence_dur_sec: f32,
     extend_sec: f32
 ) -> Result<Vec<Vec<usize>>, ()> {
-    let audio_editor = state.0.lock().unwrap().clone();
-    let count = count.0.clone();
-    
+    let count = process_count.split_audio.clone();
     *count.lock().unwrap() += 1;
 
-    let result = audio_editor.split_range(count.clone(), threshold, talk_dur_sec, mute_dur_sec, extend_sec);
+    let audio_editor = editor_state.0.lock().unwrap().clone();
+    let result = audio_editor.split_audio(count.clone(), threshold, talk_dur_sec, silence_dur_sec, extend_sec);
 
     result.ok_or(())
+}
+
+#[tauri::command]
+pub async fn extract_significant_range() -> Result<Vec<Vec<usize>>, String> {
+    // TODO: 処理を実装
+  Ok(vec![vec![0, 10000]; 4])
 }
