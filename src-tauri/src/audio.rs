@@ -28,9 +28,9 @@ impl AudioEditor {
 
         let handles = (0..THREAD).map(|i| {
             let path = path.clone();
-            let handle = thread::spawn(move || -> Result<_, String> {
+            thread::spawn(move || -> Result<_, String> {
                 let mut reader = WavReader::open(&*path)
-                    .map_err(|err| format!("ファイルを読み込めませんでした。\n{}", err))?;
+                    .map_err(|err| format!("ファイルが開けませんでした。\n{}", err))?;
                 
                 let seek_to = dur / THREAD * i;
                 reader.seek(seek_to).unwrap();
@@ -38,13 +38,11 @@ impl AudioEditor {
                 let take_len = (dur / THREAD + if i == THREAD - 1 {dur % THREAD} else {0}) * spec.channels as u32;
                 let samples = reader.into_samples()
                     .take(take_len as usize)
-                    .skip((seek_to % spec.channels as u32) as usize)
                     .step_by(spec.channels as usize)
                     .collect::<Result<Vec<i32>, _>>()
                     .map_err(|err| format!("デコードに失敗しました。\n{}", err))?;
                 Ok(samples)
-            });
-            handle
+            })
         }).collect::<Vec<_>>();
         
         for handle in handles {
