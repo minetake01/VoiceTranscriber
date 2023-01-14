@@ -1,7 +1,9 @@
 import { PlayCircle, StopCircle } from "@mui/icons-material";
 import { IconButton, Stack, Typography } from "@mui/material";
 import dynamic from "next/dynamic";
-import { memo, useState } from "react";
+import { useRouter } from "next/router";
+import { memo } from "react";
+import { useAudio } from "react-use";
 
 const AmplitudeGraph = dynamic(() => import("components/AmplitudeGraph"), { ssr: false });
 
@@ -13,13 +15,18 @@ function AudioPlayer(
         processing?: boolean,
     }
 ) {
-    const [playing, setPlaying] = useState(false);
+    const router = useRouter();
+    const audioUrl = router.query.audio as string;
+    const [audio, state, controls] = useAudio({ src: audioUrl });
     
     return <>
         <Stack direction="row" alignItems="center">
+            {audio}
             <Typography variant="caption">{props.number}</Typography>
-            <IconButton onClick={() => setPlaying(!playing)}>
-                {playing ? <StopCircle /> : <PlayCircle />}
+            <IconButton onClick={() => {
+                state.paused ? controls.play() : controls.pause()
+            }}>
+                {state.playing ? <StopCircle /> : <PlayCircle />}
             </IconButton>
             <Stack flexGrow={1} minWidth={0} spacing={1}>
                 <Typography variant="caption">{props.label}</Typography>
