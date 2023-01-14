@@ -1,7 +1,7 @@
 {
-  "name": "train-data-creator",
+  "name": "voice-transcriber",
   "version": "0.0.0",
-  "description": "",
+  "description": "Elite35P-ServerのEliteVoiceProjectで使用する、学習用音声データセットを効率的に制作する為のGUIアプリ。",
   "scripts": {
     "dev": "next dev -p 1420",
     "build": "next build && next export",

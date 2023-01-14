@@ -1,7 +1,7 @@
 [package]
-name = "train-data-creator"
+name = "voice-transcriber"
 version = "0.0.0"
-description = "A Tauri App"
+description = "Elite35P-ServerのEliteVoiceProjectで使用する、学習用音声データセットを効率的に制作する為のGUIアプリ。"
 authors = ["you"]
 license = ""
 repository = ""
