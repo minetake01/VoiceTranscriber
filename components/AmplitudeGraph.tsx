@@ -1,7 +1,7 @@
-import { invoke } from "@tauri-apps/api/tauri";
+import useAmplitudeSamples from "hooks/useAmplitudeSamples";
 import { CSSProperties, memo, useEffect, useState } from "react";
-import { useDebounce, useElementSize } from "usehooks-ts";
 import { Stage, Layer, Line } from "react-konva";
+import { useDebounce, useMeasure } from "react-use";
 
 function AmplitudeGraph(
     props: {
@@ -11,45 +11,36 @@ function AmplitudeGraph(
         splitRanges?: [number, number][],
     }
 ) {
-    const [containerRef, containerSize] = useElementSize();
-    const forceUpdateOnResize = useDebounce(containerSize, 200);
-    const [renderedSize, setRenderedSize] = useState({
-        width: 0,
-        height: 0,
-    });
+    const [containerRef, containerSize] = useMeasure<HTMLDivElement>();
+    const [amplitudeSamples, updateAmplitudeSamples] = useAmplitudeSamples();
 
-    const [amplitudeSamples, setAmplitudeSamples] = useState<number[]>([])
+    useDebounce(() => {
+        updateAmplitudeSamples(
+            props.segmentRange?.[0] ?? 0,
+            props.segmentRange?.[1] ?? -1,
+            containerSize.width,
+        );
+    }, 300, [containerSize, props.segmentRange]);
+
+    const [renderedSize, setRenderedSize] = useState({ width: 0, height: 0 });
     const [magnification, setMagnification] = useState(1);
 
     useEffect(() => {
-        (async () => {
-            const _amplitudeSamples = await invoke<number[]>("extract_amplitude_samples", {
-                start: props.segmentRange?.[0] ?? 0,
-                end: props.segmentRange?.[1] ?? -1,
-                n: containerSize.width,
-            }).catch(() => null);
-            if (_amplitudeSamples) {
-                setRenderedSize(containerSize);
-                setAmplitudeSamples(_amplitudeSamples);
-                setMagnification(containerSize.height / Math.max(..._amplitudeSamples));
-            }
-        })();
-    }, [forceUpdateOnResize, props.segmentRange]);
+        setRenderedSize(containerSize);
+        setMagnification(containerSize.height / Math.max(...amplitudeSamples));
+    }, [amplitudeSamples, props.segmentRange]);
 
     return <>
         <div style={props.style} ref={containerRef}>
             <Stage
-                width={containerSize.width}
-                height={containerSize.height}
+                width={Math.floor(containerSize.width)}
+                height={Math.floor(containerSize.height)}
                 scale={{
                     x: containerSize.width / renderedSize.width,
                     y: containerSize.height / renderedSize.height,
                 }}
             >
-                <Layer name="time-label">
-
-                </Layer>
-                <Layer name="graph">
+                <Layer>
                     {amplitudeSamples.map((value, index) => (
                         <Line
                             key={index}
@@ -61,11 +52,14 @@ function AmplitudeGraph(
                                 index, renderedSize.height,
                                 index, Math.floor(renderedSize.height - value * magnification)
                             ]}
+                            perfectDrawEnabled={false}
+                            shadowForStrokeEnabled={false}
+                            hitStrokeWidth={0}
                         />
                     ))}
                 </Layer>
                 {props.threshold &&
-                    <Layer name="threshold">
+                    <Layer>
                         <Line
                             x={0.5}
                             y={0.5}
@@ -75,6 +69,9 @@ function AmplitudeGraph(
                                 0, Math.floor(renderedSize.height - props.threshold * magnification),
                                 renderedSize.width, Math.floor(renderedSize.height - props.threshold * magnification),
                             ]}
+                            perfectDrawEnabled={false}
+                            shadowForStrokeEnabled={false}
+                            hitStrokeWidth={0}
                         />
                     </Layer>
                 }

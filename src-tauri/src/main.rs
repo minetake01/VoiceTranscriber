@@ -13,7 +13,7 @@ use tauri::Manager;
 
 use crate::commands::*;
 
-pub struct EditorState(Mutex<AudioEditor>);
+pub struct EditorState(Mutex<Option<AudioEditor>>);
 
 pub struct ProcessCount{
     split_audio: Arc<Mutex<i32>>,
@@ -21,7 +21,7 @@ pub struct ProcessCount{
 
 fn main() {
     tauri::Builder::default()
-        .manage(EditorState(Default::default()))
+        .manage(EditorState(Mutex::new(None)))
         .manage(ProcessCount {
             split_audio: Arc::new(Mutex::new(0)),
         })
@@ -32,7 +32,6 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             open_file,
-            get_file_path,
             extract_amplitude_samples,
             split_audio,
             extract_significant_range,

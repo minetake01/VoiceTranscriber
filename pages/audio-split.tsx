@@ -1,34 +1,28 @@
 import { Button, Paper, Stack, TextField, Typography } from "@mui/material";
-import { invoke } from "@tauri-apps/api/tauri";
 import AudioPlayer from "components/AudioPlayer";
+import useSignificantRanges from "hooks/useSignificantRanges";
+import useSplitRanges from "hooks/useSplitRanges";
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
-import { useDebounce } from "usehooks-ts";
+import { Suspense, useEffect, useState } from "react";
+import { useDebounce } from "react-use";
+import { SplitParams } from "types/SplitParams";
 
 const AmplitudeGraph = dynamic(() => import("components/AmplitudeGraph"), { ssr: false });
 
 export default function AudioSplit() {
-    const [splitParams, setSplitParams] = useState({
+    const [splitParams, setSplitParams] = useState<SplitParams>({
         threshold: 10000,
         silenceDurSec: 0.5,
         talkDurSec: 1.0,
         extendSec: 0.5,
     });
-    const debouncedSplitParams = useDebounce(splitParams, 50);
-    
-    const [splitRanges, setSplitRanges] = useState<[number, number][]>([]);
-    const [significantRanges, setSignificantRanges] = useState<[number, number][]>([[0, -1], [0, -1], [0, -1], [0, -1]]);
-    
-    useEffect(() => {
-        (async () => {
-            const _splitRanges = await invoke<[number, number][]>("split_audio", debouncedSplitParams).catch(() => null);
-            if (_splitRanges) {
-                setSplitRanges(_splitRanges);
-            }
-            const _significantRanges = await invoke<[number, number][]>("extract_significant_range");
-            setSignificantRanges(_significantRanges);
-        })();
-    }, [debouncedSplitParams]);
+    const [splitRanges, setSplitRanges] = useSplitRanges();
+    const [significantRanges, updateSignificantRanges] = useSignificantRanges();
+
+    useDebounce(() => {
+        setSplitRanges(splitParams);
+        updateSignificantRanges();
+    }, 100, [splitParams]);
 
     return <>
         <Stack spacing={3} p={2}>
@@ -38,7 +32,7 @@ export default function AudioSplit() {
             <Stack spacing={8} direction="row" justifyContent="center">
                 <InputParam label={"しきい値"} defaultValue={10000} step={40} min={1} onChange={val => setSplitParams({ ...splitParams, threshold: val })} />
                 <InputParam label={"最短無音時間(秒)"} defaultValue={0.5} step={0.1} min={0.1} onChange={val => setSplitParams({ ...splitParams, silenceDurSec: val })} />
-                <InputParam label={"最短分割範囲(秒)"} defaultValue={1.0} step={0.2} min={0.2} onChange={val => setSplitParams({ ...splitParams, talkDurSec: val })} />
+                <InputParam label={"最短分割範囲(秒)"} defaultValue={0.2} step={0.1} min={0.05} onChange={val => setSplitParams({ ...splitParams, talkDurSec: val })} />
                 <InputParam label={"拡張時間(秒)"} defaultValue={0.5} step={0.1} min={0} onChange={val => setSplitParams({ ...splitParams, extendSec: val })} />
             </Stack>
             <Stack spacing={0}>

@@ -6,31 +6,26 @@ use std::thread;
 
 const THREAD: u32 = 4;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct AudioEditor {
-    pub file_path: PathBuf,
-
-    spec: Option<WavSpec>,
+    spec: WavSpec,
     samples: Vec<i32>,
 }
 impl AudioEditor {
-    pub fn decode(&mut self) -> Result<(), String> {
-        let reader = WavReader::open(&self.file_path)
+    pub fn init(file_path: &PathBuf) -> Result<Self, String> {
+        let reader = WavReader::open(file_path)
             .map_err(|err| format!("ファイルが開けませんでした。\n{}", err))?;
 
-        //クリア
-        self.samples = vec![];
-
         //デコード
-        let mut spec = reader.spec();
+        let spec = reader.spec();
         let dur = reader.duration();
-        let path = Arc::new(self.file_path.clone());
+        let path = Arc::new(file_path.clone());
 
         let handles = (0..THREAD).map(|i| {
             let path = path.clone();
-            let handle = thread::spawn(move || -> Result<_, String> {
+            thread::spawn(move || -> Result<_, String> {
                 let mut reader = WavReader::open(&*path)
-                    .map_err(|err| format!("ファイルを読み込めませんでした。\n{}", err))?;
+                    .map_err(|err| format!("ファイルが開けませんでした。\n{}", err))?;
                 
                 let seek_to = dur / THREAD * i;
                 reader.seek(seek_to).unwrap();
@@ -38,38 +33,39 @@ impl AudioEditor {
                 let take_len = (dur / THREAD + if i == THREAD - 1 {dur % THREAD} else {0}) * spec.channels as u32;
                 let samples = reader.into_samples()
                     .take(take_len as usize)
-                    .skip((seek_to % spec.channels as u32) as usize)
                     .step_by(spec.channels as usize)
                     .collect::<Result<Vec<i32>, _>>()
                     .map_err(|err| format!("デコードに失敗しました。\n{}", err))?;
                 Ok(samples)
-            });
-            handle
+            })
         }).collect::<Vec<_>>();
+
+        let mut audio_editor = Self {
+            spec: WavSpec { channels: 1, ..spec },
+            samples: vec![],
+        };
         
         for handle in handles {
             let v = handle.join().unwrap()?;
-            self.samples.extend(v);
+            audio_editor.samples.extend(v);
         }
-        spec.channels = 1;
-        self.spec = Some(spec);
         
-        Ok(())
+        Ok(audio_editor)
     }
 
     //デバッグ用エンコーダー
     pub fn encode(&self) {
-        let mut writer = hound::WavWriter::create("output.wav", self.spec.unwrap()).unwrap();
+        let mut writer = hound::WavWriter::create("output.wav", self.spec).unwrap();
         self.samples.iter().for_each(|sample| {
             writer.write_sample(*sample).unwrap();
         });
         writer.finalize().unwrap();
     }
 
-    pub fn extract_amplitude_samples(&self, start: usize, end: i32, n: u32) -> Vec<i32> {
+    pub fn extract_amplitude_samples(&self, start: usize, end: i32, n: f32) -> Vec<i32> {
         let end = if end == -1 { self.samples.len() } else { end as usize };
         
-        let chunk_size = ((end - start) as f32 / n as f32).ceil() as usize;
+        let chunk_size = ((end - start) as f32 / n).ceil() as usize;
         let extracted: Vec<i32> = self.samples[start..end]
             .chunks(chunk_size)
             .map(|chunk| chunk.iter().fold(0, |acc, x| acc.max(x.abs())))
@@ -79,7 +75,7 @@ impl AudioEditor {
     }
 
     pub fn split_audio(&self, process_count: Arc<Mutex<i32>>, threshold: i32, talk_dur_sec: f32, silence_dur_sec: f32, extend_sec: f32) -> Option<Vec<Vec<usize>>> {
-        let sample_rate = self.spec.unwrap().sample_rate;
+        let sample_rate = self.spec.sample_rate;
         let talk_dur = (sample_rate as f32 * talk_dur_sec) as usize;
         let silence_dur = (sample_rate as f32 * silence_dur_sec) as usize;
         let extend = (sample_rate as f32 * extend_sec) as usize;
