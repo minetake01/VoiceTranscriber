@@ -5,11 +5,11 @@ use tauri::{api::dialog::blocking::FileDialogBuilder, State};
 use crate::{EditorState, ProcessCount, audio::AudioEditor};
 
 #[tauri::command]
-pub async fn open_file(editor_state: State<'_, EditorState>) -> Result<PathBuf, String> {
+pub async fn open_file(editor_state: State<'_, EditorState>) -> Result<(), String> {
     let file_path = FileDialogBuilder::new().add_filter("WAV Audio File (VLC)", &["wav"]).pick_file().ok_or("")?;
-    let audio_editor = AudioEditor::init(&file_path)?;
+    let audio_editor = AudioEditor::init(file_path)?;
     *editor_state.0.lock().unwrap() = Some(audio_editor);
-    Ok(file_path)
+    Ok(())
 }
 
 #[tauri::command]
@@ -44,5 +44,5 @@ pub async fn split_audio(
 #[tauri::command]
 pub async fn extract_significant_range() -> Result<Vec<Vec<usize>>, String> {
     // TODO: 処理を実装
-  Ok(vec![vec![0, 10000]; 4])
+    Ok(vec![vec![0, 10000]; 4])
 }

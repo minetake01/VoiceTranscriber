@@ -8,12 +8,13 @@ const THREAD: u32 = 4;
 
 #[derive(Debug, Clone)]
 pub struct AudioEditor {
+    pub file_path: PathBuf,
     spec: WavSpec,
     samples: Vec<i32>,
 }
 impl AudioEditor {
-    pub fn init(file_path: &PathBuf) -> Result<Self, String> {
-        let reader = WavReader::open(file_path)
+    pub fn init(file_path: PathBuf) -> Result<Self, String> {
+        let reader = WavReader::open(&file_path)
             .map_err(|err| format!("ファイルが開けませんでした。\n{}", err))?;
 
         //デコード
@@ -41,6 +42,7 @@ impl AudioEditor {
         }).collect::<Vec<_>>();
 
         let mut audio_editor = Self {
+            file_path,
             spec: WavSpec { channels: 1, ..spec },
             samples: vec![],
         };
