@@ -1,9 +1,9 @@
 import { PlayCircle, StopCircle } from "@mui/icons-material";
 import { IconButton, Stack, Typography } from "@mui/material";
+import { convertFileSrc, invoke } from "@tauri-apps/api/tauri";
 import dynamic from "next/dynamic";
-import { useRouter } from "next/router";
 import { memo } from "react";
-import { useAudio } from "react-use";
+import { useAsync, useAudio } from "react-use";
 
 const AmplitudeGraph = dynamic(() => import("components/AmplitudeGraph"), { ssr: false });
 
@@ -15,22 +15,27 @@ function AudioPlayer(
         processing?: boolean,
     }
 ) {
-    const router = useRouter();
-    const audioUrl = router.query.audio as string;
-    const [audio, state, controls] = useAudio({ src: audioUrl });
+    const audio_segment = useAsync(async () => {
+        const path = await invoke<string>("encode_partial", {start: props.segmentRange[0], end: props.segmentRange[1]});
+        return convertFileSrc(path);
+    }, [props.segmentRange]);
+    
+    const [audio, state, controls, _ref] = useAudio({
+        src: audio_segment.value || ""
+    });
     
     return <>
+        {audio}
         <Stack direction="row" alignItems="center">
-            {audio}
             <Typography variant="caption">{props.number}</Typography>
             <IconButton onClick={() => {
-                state.paused ? controls.play() : controls.pause()
+                state.playing ? controls.pause() : controls.play();
             }}>
                 {state.playing ? <StopCircle /> : <PlayCircle />}
             </IconButton>
             <Stack flexGrow={1} minWidth={0} spacing={1}>
                 <Typography variant="caption">{props.label}</Typography>
-                <AmplitudeGraph style={{width: "100%", height: 20}} segmentRange={props.segmentRange} />
+                <AmplitudeGraph style={{width: "100%", height: 25}} segmentRange={props.segmentRange} />
             </Stack>
         </Stack>
     </>;

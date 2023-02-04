@@ -55,10 +55,9 @@ impl AudioEditor {
         Ok(audio_editor)
     }
 
-    //デバッグ用エンコーダー
-    pub fn encode(&self) {
-        let mut writer = hound::WavWriter::create("output.wav", self.spec).unwrap();
-        self.samples.iter().for_each(|sample| {
+    pub fn encode(&self, path: &PathBuf, start: usize, end: usize) {
+        let mut writer = hound::WavWriter::create(path, self.spec).unwrap();
+        self.samples[start..end].iter().for_each(|sample| {
             writer.write_sample(*sample).unwrap();
         });
         writer.finalize().unwrap();

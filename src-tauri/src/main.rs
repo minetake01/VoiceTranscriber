@@ -35,6 +35,7 @@ fn main() {
             extract_amplitude_samples,
             split_audio,
             extract_significant_range,
+            encode_partial,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

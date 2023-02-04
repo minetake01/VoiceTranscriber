@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, env};
 
 use tauri::{api::dialog::blocking::FileDialogBuilder, State};
 
@@ -45,4 +45,19 @@ pub async fn split_audio(
 pub async fn extract_significant_range() -> Result<Vec<Vec<usize>>, String> {
     // TODO: 処理を実装
     Ok(vec![vec![0, 10000]; 4])
+}
+
+#[tauri::command]
+pub async fn encode_partial(
+    editor_state: State<'_, EditorState>,
+    start: usize,
+    end: usize
+) -> Result<PathBuf, String> {
+    let audio_editor = editor_state.0.lock().unwrap().clone().unwrap();
+    let path = env::temp_dir()
+        .join(format!("{}-{}-{}.wav", audio_editor.file_path.file_stem().unwrap().to_str().unwrap(), start, end));
+    if !path.is_file() {
+        audio_editor.encode(&path, start, end);
+    }
+    Ok(path)
 }
